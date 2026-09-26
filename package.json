@@ -1,0 +1,13 @@
+{
+  "name": "boccia-online",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "deploy": "wrangler deploy",
+    "test:network": "node network-tests.cjs",
+    "test:clock": "node clock-tests.cjs"
+  },
+  "devDependencies": {
+    "wrangler": "^4.0.0"
+  }
+}

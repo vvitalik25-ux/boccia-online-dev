@@ -1,0 +1,22 @@
+{
+  "$schema": "./node_modules/wrangler/config-schema.json",
+  "name": "boccia-online-dev",
+  "main": "worker.js",
+  "compatibility_date": "2026-08-12",
+  "durable_objects": {
+    "bindings": [
+      {
+        "name": "BOCCIA_ROOMS",
+        "class_name": "BocciaRoom"
+      }
+    ]
+  },
+  "exports": {
+    "BocciaRoom": {
+      "type": "durable-object",
+      "storage": "sqlite"
+    }
+  },
+  "account_id": "e5f851f38f5ffa47fde8944c2fcf0778",
+  "workers_dev": true
+}
