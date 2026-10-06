@@ -1,5 +1,7 @@
 import { APP_BUILD, ONLINE_PROTOCOL, cors, json, makeRoomCode } from "./game-engine.js";
+import { monitorRoute } from "./monitor.js";
 export { BocciaRoom } from "./room.js";
+export { SiteMonitor } from "./monitor.js";
 
 function transportCors(headers={}){
   return cors({
@@ -33,6 +35,7 @@ async function creationKey(clientKey,requestId,attempt){
 export default {
   async fetch(request,env){
     const url=new URL(request.url);
+    if(url.pathname.startsWith('/monitor/')) return monitorRoute(request,env);
 
     if(request.method==="OPTIONS"){
       return new Response(null,{status:204,headers:transportCors()});
@@ -162,4 +165,3 @@ export default {
     return new Response("Not found",{status:404,headers:transportCors()});
   }
 };
-

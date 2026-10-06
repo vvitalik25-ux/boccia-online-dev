@@ -8,11 +8,19 @@
       {
         "name": "BOCCIA_ROOMS",
         "class_name": "BocciaRoom"
+      },
+      {
+        "name": "SITE_MONITOR",
+        "class_name": "SiteMonitor"
       }
     ]
   },
   "exports": {
     "BocciaRoom": {
+      "type": "durable-object",
+      "storage": "sqlite"
+    },
+    "SiteMonitor": {
       "type": "durable-object",
       "storage": "sqlite"
     }
