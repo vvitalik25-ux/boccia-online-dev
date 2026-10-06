@@ -14,7 +14,7 @@ Configure plain-text variables after checking the Workers plan in each account:
 - `STABLE_CF_ACCOUNT_ID`: production account ID.
 - `DEV_CF_DAILY_REQUEST_LIMIT`, `STABLE_CF_DAILY_REQUEST_LIMIT`: actual daily Workers request allowance. For Workers Free, 100000 requests per account, resetting at 00:00 UTC. Do not use this value for a paid plan with no daily request cap.
 
-No tokens or passwords belong in Git, client JavaScript or query strings. Login sessions expire after 30 minutes and password rotation revokes them. Authentication/presence are transient and reset if the monitoring Durable Object restarts.
+No tokens or passwords belong in Git, client JavaScript or query strings. Login sessions remain active while the tab polls statistics. The client holds its token only in memory and clears it on pagehide, sending a best-effort keepalive logout. Abandoned server sessions expire after 24 hours without activity; password rotation revokes them. Authentication/presence are transient and reset if the monitoring Durable Object restarts.
 
 Quota is account-wide Workers request usage, **not CPU load**, based on Cloudflare's adaptive analytics (possibly sampled/delayed), cached for 60 seconds. Empty successful results mean zero; missing credentials or API errors are reported as unavailable. Other service quotas (Durable Objects, storage) are not represented by this percentage.
 

@@ -2,6 +2,7 @@ import { DurableObject } from 'cloudflare:workers';
 
 const ORIGIN = 'https://vvitalik25-ux.github.io';
 const TTL = 90000;
+const SESSION_IDLE_TTL = 24 * 60 * 60 * 1000;
 const reply = (data, status=200) => new Response(JSON.stringify(data), {status, headers:{
   'Content-Type':'application/json', 'Cache-Control':'no-store',
   'Access-Control-Allow-Origin':ORIGIN, 'Access-Control-Allow-Methods':'POST,OPTIONS',
@@ -59,12 +60,13 @@ export class SiteMonitor extends DurableObject {
       if(this.sessions.size>=100) return reply({error:'capacity'},503);
       const token=crypto.randomUUID()+crypto.randomUUID();
       // Store only a digest of the bearer token; rotating the password invalidates sessions.
-      this.sessions.set(await digest(token),{expires:now+1800000,passwordHash:expected});
-      return reply({token,expires:now+1800000});
+      this.sessions.set(await digest(token),{expires:now+SESSION_IDLE_TTL,passwordHash:expected});
+      return reply({token});
     }
     const key=await digest(request.headers.get('Authorization')?.replace(/^Bearer /,'')||'');
     const session=this.sessions.get(key);
     if(!session || session.passwordHash!==await digest(this.env.DEV_PANEL_PASSWORD||''))return reply({error:'auth'},401);
+    session.expires=now+SESSION_IDLE_TTL;
     if(path==='/monitor/logout'){this.sessions.delete(key);return reply({ok:true});}
     if(path!=='/monitor/stats') return reply({error:'not_found'},404);
     const visitors={stable:0,dev:0};for(const visitor of this.visitors.values())visitors[visitor.channel]++;
