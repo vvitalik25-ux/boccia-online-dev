@@ -26,5 +26,9 @@
     }
   },
   "account_id": "e5f851f38f5ffa47fde8944c2fcf0778",
-  "workers_dev": true
+  "workers_dev": true,
+  "vars": {
+    "DEV_CF_DAILY_REQUEST_LIMIT": "100000",
+    "DEV_CF_ACCOUNT_ID": "e5f851f38f5ffa47fde8944c2fcf0778"
+  }
 }
