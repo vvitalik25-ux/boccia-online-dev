@@ -22,14 +22,20 @@ export class SiteMonitor extends DurableObject {
   constructor(ctx, env) {
     super(ctx, env); this.env=env; this.visitors=new Map(); this.sessions=new Map();
     this.attempts=new Map(); this.quotaCache=new Map(); this.quotaPending=new Map();
+    this.storage=ctx.storage;
+    this.ready=ctx.blockConcurrencyWhile(async()=>{
+      const saved=await this.storage.list({prefix:"session:"});
+      for(const [key,value] of saved)this.sessions.set(key.slice(8),value);
+    });
   }
-  clean(now) {
+  async clean(now) {
     for (const [key,value] of this.visitors) if(now-value.at>TTL) this.visitors.delete(key);
-    for (const [key,value] of this.sessions) if(now>value.expires) this.sessions.delete(key);
+    for (const [key,value] of this.sessions) if(now>value.expires) {this.sessions.delete(key);await this.storage.delete("session:"+key);}
     for (const [key,value] of this.attempts) if(now>value.until) this.attempts.delete(key);
   }
   async fetch(request) {
-    const now=Date.now(); this.clean(now);
+    await this.ready;
+    const now=Date.now(); await this.clean(now);
     const path=new URL(request.url).pathname;
     let body;
     try {
@@ -60,15 +66,18 @@ export class SiteMonitor extends DurableObject {
       if(this.sessions.size>=100) return reply({error:'capacity'},503);
       const token=crypto.randomUUID()+crypto.randomUUID();
       // Store only a digest of the bearer token; rotating the password invalidates sessions.
-      this.sessions.set(await digest(token),{expires:now+SESSION_IDLE_TTL,passwordHash:expected});
+      const sessionKey=await digest(token),record={expires:now+SESSION_IDLE_TTL,passwordHash:expected};
+      this.sessions.set(sessionKey,record);
+      await this.storage.put("session:"+sessionKey,record);
       return reply({token});
     }
     const key=await digest(request.headers.get('Authorization')?.replace(/^Bearer /,'')||'');
     const session=this.sessions.get(key);
     if(!session || session.passwordHash!==await digest(this.env.DEV_PANEL_PASSWORD||''))return reply({error:'auth'},401);
     session.expires=now+SESSION_IDLE_TTL;
-    if(path==='/monitor/logout'){this.sessions.delete(key);return reply({ok:true});}
+    if(path==='/monitor/logout'){this.sessions.delete(key);await this.storage.delete('session:'+key);return reply({ok:true});}
     if(path!=='/monitor/stats') return reply({error:'not_found'},404);
+    await this.storage.put('session:'+key,session);
     const visitors={stable:0,dev:0};for(const visitor of this.visitors.values())visitors[visitor.channel]++;
     const quota=await Promise.all(['stable','dev'].map(channel=>this.quota(channel)));
     return reply({now:Date.now(),visitors,presenceWindowSeconds:90,quota});
